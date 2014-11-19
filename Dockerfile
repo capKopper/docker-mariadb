@@ -6,7 +6,7 @@ RUN \
   echo 'deb http://ftp.igh.cnrs.fr/pub/mariadb/repo/10.0/ubuntu trusty main' > /etc/apt/sources.list.d/mariadb.list && \
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server
-RUN apt-get install supervisor -y
+RUN apt-get install supervisor pwgen -y
 
 ## Configuration
 RUN sed -i 's/^\(bind-address\s.*\)/# \1/' /etc/mysql/my.cnf
