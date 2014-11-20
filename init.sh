@@ -19,8 +19,10 @@ create_admin_access(){
   ## Get admin password
   ADMIN_PASSWORD=${ADMIN_PASSWORD:-$(pwgen -s 12 1)}
 
-    _log "Starting MariaDB..."
   if [ -n "${ADMIN_PASSWORD}" -a ! -e $LOCK_FILE ]; then
+    _log "Creating admin user..."
+
+    _log "> starting MariaDB..."
     /usr/bin/mysqld_safe > /dev/null 2>&1 &
 
     local state=1
@@ -31,7 +33,6 @@ create_admin_access(){
       state=$?
     done
 
-    _log "Creating admin user..."
     mysql -uroot -e "CREATE USER 'admin'@'%' IDENTIFIED BY '"$ADMIN_PASSWORD"';"
     mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;"
 
@@ -55,7 +56,7 @@ create_user_and_db(){
 
   if [ -n "${DB_USER}" -a -n "${DB_NAME}" ]; then
     if [ ! -d "/var/lib/mysql/${DB_NAME}" ]; then
-      _log "Starting MariaDB..."
+      _log "> starting MariaDB..."
       /usr/bin/mysqld_safe > /dev/null 2>&1 &
 
       local state=1
