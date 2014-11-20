@@ -14,11 +14,13 @@ initialize_mariadb(){
 }
 
 create_admin_access(){
+  local LOCK_FILE=/var/lib/mysql/.mariadb-create_admin_access
+
   ## Get admin password
   ADMIN_PASSWORD=${ADMIN_PASSWORD:-$(pwgen -s 12 1)}
 
-  if [ -n "${ADMIN_PASSWORD}" ]; then
     _log "Starting MariaDB..."
+  if [ -n "${ADMIN_PASSWORD}" -a ! -e $LOCK_FILE ]; then
     /usr/bin/mysqld_safe > /dev/null 2>&1 &
 
     local state=1
@@ -40,6 +42,7 @@ create_admin_access(){
     echo ""
     echo "=========================================="
 
+    echo $ADMIN_PASSWORD > $LOCK_FILE
     mysqladmin -uroot shutdown
   fi
 }
