@@ -6,7 +6,7 @@ RUN apt-get update && \
     apt-get install runit software-properties-common inotify-tools -y
 
 # MariaDB Installation
-ENV MARIADB_VERSION 10.0.17+maria-1~trusty
+ENV MARIADB_VERSION 10.0.19+maria-1~trusty
 RUN \
   apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db && \
   echo 'deb http://ftp.igh.cnrs.fr/pub/mariadb/repo/10.0/ubuntu trusty main' > /etc/apt/sources.list.d/mariadb.list && \
