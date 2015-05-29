@@ -14,7 +14,7 @@ initialize_mariadb(){
     _log "Initializing MariaDB..."
     if [[ ! -d /var/lib/mysql/mysql ]]; then
         _log "==> an empty MariaDB volume has been detected: initialization in progress..."
-        mysql_install_db > /dev/null 2>&1
+        mysql_install_db --user=mysql > /dev/null 2>&1
     else
         _debug "==> already initialize: nothing to do"
     fi
