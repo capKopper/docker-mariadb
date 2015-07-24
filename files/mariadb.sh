@@ -9,7 +9,7 @@ source /opt/container/lib/mariadb.sh
 main(){
     initialize_mariadb
     create_admin_access
-    create_dbs
+    create_dbs "1"
 }
 
 main $@
