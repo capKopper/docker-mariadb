@@ -65,13 +65,17 @@ create_db(){
     # - $1: the database name
     # - $2: the database user
     # - $3: the database password
+    # - $4: need to wait for mariadb server is up (default: 0 => no waiting)
     # """
     declare -r db_name=$1
     declare -r db_user=$2
     declare -r db_password=$3
+    declare -r need_waiting=${4:-0}
 
     if [ ! -d "/var/lib/mysql/${db_name}" ]; then
-        waiting_for_mariadb
+        if [ $need_waiting == "1" ]; then
+            waiting_for_mariadb
+        fi
 
         _log "==> [${db_name}] create database"
         mysql -uroot -e "CREATE DATABASE IF NOT EXISTS \`${db_name}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;"
@@ -79,7 +83,9 @@ create_db(){
         _log "==> [${db_name}] granting access for user '$db_user'"
         mysql -uroot -e "GRANT ALL PRIVILEGES ON \`"${db_name}"\`.* TO '"${db_user}"'@'%' IDENTIFIED BY '"${db_password}"';"
 
-        mysqladmin -uroot shutdown
+        if [ $need_waiting == "1" ]; then
+            mysqladmin -uroot shutdown
+        fi
 
     else
         _log "[${db_name}] database already exists"
@@ -89,6 +95,7 @@ create_db(){
 create_dbs(){
     # """
     # Create databases.
+    # - $1: need to wait for mariadb server is up
     #
     # Databases can be created using 2 ways
     # - all databases are specified into the 'DB_NAME' environment variable.
@@ -106,13 +113,14 @@ create_dbs(){
     DB_NAME=${DB_NAME:-}
     DB_USER=${DB_USER:-}
     DB_PASSWORD=${DB_PASSWORD:-}
+    need_waiting=$1
 
     case $DB_CREATE_MODE in
         env)
             if [ -n "${DB_NAME}" ]; then
                 _log "Creating databases based on 'DB_NAME' environnment variable..."
                 # write 'DB_NAME' into a temporary file and then parse it.
-                parse_dbs_file /tmp/db-name
+                parse_dbs_file /tmp/db-name ${need_waiting}
                 rm /tmp/db-name
             fi
         ;;
@@ -120,7 +128,7 @@ create_dbs(){
         file)
             if [ -n "${DB_NAME_FILE}" ]; then
                 _log "Creating databases based on 'DB_NAME_FILE' file..."
-                parse_dbs_file ${DB_NAME_FILE}
+                parse_dbs_file ${DB_NAME_FILE} ${need_waiting}
             fi
         ;;
 
@@ -133,24 +141,27 @@ create_dbs(){
 parse_dbs_file(){
     # """
     # Parse the database definition file.
+    # - $1: the file containing the databases description
+    # - $2: need to wait for mariadb server is up
     #
     # For each database we can
     # - give a specific user or password following the pattern "<db_name>:<db_user>:<db_password>"
     # - if there is no specific user we will use 'DB_USER' and 'DB_PASSWORD' variables
     # """
     declare dbs_file=$1
+    declare need_waiting=$2
 
     while IFS=":" read -r _db _dbuser _dbpassword; do
         _log "[${_db}] found database configuration"
 
         if [ -n "${_dbuser}" -a -n "${_dbpassword}" ]; then
             _debug "==> use specific 'user' and 'password'"
-            create_db ${_db} ${_dbuser} ${_dbpassword}
+            create_db ${_db} ${_dbuser} ${_dbpassword} ${need_waiting}
 
         else
             _debug "==> use global 'user' and 'password'"
             if [ -n "${DB_USER}" -a -n "${DB_PASSWORD}" ]; then
-                create_db ${_db} ${DB_USER} ${DB_PASSWORD}
+                create_db ${_db} ${DB_USER} ${DB_PASSWORD} ${need_waiting}
 
             else
                 _error "[${_db}] database creation error: DB_USER or DB_PASSWORD not specified"
