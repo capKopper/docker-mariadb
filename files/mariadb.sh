@@ -97,47 +97,74 @@ create_dbs(){
     # """
     # Create databases.
     #
-    # All databases are specified into the 'DB_NAME' environment variable.
+    # Databases can be created using 2 ways
+    # - all databases are specified into the 'DB_NAME' environment variable.
+    # - all databases are specified in a file 'DB_NAME_FILE'.
     #
-    # Several databases can be created and must be separate with a comma.
+    # Databases creation mode can be selected throught the 'DB_CREATE_MODE' variable.
+    # The 2 possible values are
+    # - 'env'
+    # - 'file'
+    #
+    # When 'DB_CREATE_MODE' is set to 'env', several databases can be created and must be separate with a comma.
+    # """
+    # get configuration
+    DB_CREATE_MODE=${DB_CREATE_MODE:-env}
+    DB_NAME=${DB_NAME:-}
+    DB_USER=${DB_USER:-}
+    DB_PASSWORD=${DB_PASSWORD:-}
+
+    case $DB_CREATE_MODE in
+        env)
+            if [ -n "${DB_NAME}" ]; then
+                _log "Creating databases based on 'DB_NAME' environnment variable..."
+                # write 'DB_NAME' into a temporary file and then parse it.
+                parse_dbs_file /tmp/db-name
+                rm /tmp/db-name
+            fi
+        ;;
+
+        file)
+            if [ -n "${DB_NAME_FILE}" ]; then
+                _log "Creating databases based on 'DB_NAME_FILE' file..."
+                parse_dbs_file ${DB_NAME_FILE}
+            fi
+        ;;
+
+        *)
+            _error "Wrong value for 'DB_CREATE_MODE'"
+        ;;
+    esac
+}
+
+parse_dbs_file(){
+    # """
+    # Parse the database definition file.
     #
     # For each database we can
     # - give a specific user or password following the pattern "<db_name>:<db_user>:<db_password>"
     # - if there is no specific user we will use 'DB_USER' and 'DB_PASSWORD' variables
     # """
-    # get configuration
-    DB_NAME=${DB_NAME:-}
-    DB_USER=${DB_USER:-}
-    DB_PASSWORD=${DB_PASSWORD:-}
+    declare dbs_file=$1
 
-    if [ -n "${DB_NAME}" ]; then
-        _log "Creating databases based on 'DB_NAME' environnment variable..."
+    while IFS=":" read -r _db _dbuser _dbpassword; do
+        _log "[${_db}] found database configuration"
 
-        # write 'DB_NAME' into a temporary file ...
-        echo $DB_NAME | tr , \\n > /tmp/db-name
-        # ... then parse it.
-        while IFS=":" read -r _db _dbuser _dbpassword; do
-            _log "[${_db}] found database configuration"
+        if [ -n "${_dbuser}" -a -n "${_dbpassword}" ]; then
+            _debug "==> use specific 'user' and 'password'"
+            create_db ${_db} ${_dbuser} ${_dbpassword}
 
-            if [ -n "${_dbuser}" -a -n "${_dbpassword}" ]; then
-                _debug "==> use specific 'user' and 'password'"
-                create_db ${_db} ${_dbuser} ${_dbpassword}
+        else
+            _debug "==> use global 'user' and 'password'"
+            if [ -n "${DB_USER}" -a -n "${DB_PASSWORD}" ]; then
+                create_db ${_db} ${DB_USER} ${DB_PASSWORD}
 
             else
-                _debug "==> use global 'user' and 'password'"
-                if [ -n "${DB_USER}" -a -n "${DB_PASSWORD}" ]; then
-                    create_db ${_db} ${DB_USER} ${DB_PASSWORD}
-
-                else
-                    _error "[${_db}] database creation error: DB_USER or DB_PASSWORD not specified"
-                fi
+                _error "[${_db}] database creation error: DB_USER or DB_PASSWORD not specified"
             fi
-        done < /tmp/db-name
-
-        rm /tmp/db-name
-    fi
+        fi
+    done < $dbs_file
 }
-
 
 main(){
     initialize_mariadb
