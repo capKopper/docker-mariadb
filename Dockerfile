@@ -27,6 +27,11 @@ ADD files/mariadb.sh /opt/container/services/
 ADD files/init.sh /init.sh
 RUN chmod +x /init.sh
 
+# tools
+ADD files/create_dbs.sh /tools/
+RUN chown root:root /tools/create_dbs.sh && \
+    chmod 500 /tools/create_dbs.sh
+
 ENV TERM dumb
 
 EXPOSE 3306
