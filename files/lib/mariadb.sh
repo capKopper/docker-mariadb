@@ -120,6 +120,7 @@ create_dbs(){
             if [ -n "${DB_NAME}" ]; then
                 _log "Creating databases based on 'DB_NAME' environnment variable..."
                 # write 'DB_NAME' into a temporary file and then parse it.
+                echo $DB_NAME | tr , \\n > /tmp/db-name
                 parse_dbs_file /tmp/db-name ${need_waiting}
                 rm /tmp/db-name
             fi
