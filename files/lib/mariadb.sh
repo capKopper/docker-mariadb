@@ -89,6 +89,17 @@ create_db(){
 
     else
         _log "[${db_name}] database already exists"
+
+        if [ $need_waiting == "1" ]; then
+            waiting_for_mariadb
+        fi
+
+        _log "==> [${db_name}] granting access for user '$db_user'"
+        mysql -uroot -e "GRANT ALL PRIVILEGES ON \`"${db_name}"\`.* TO '"${db_user}"'@'%' IDENTIFIED BY '"${db_password}"';"
+
+        if [ $need_waiting == "1" ]; then
+            mysqladmin -uroot shutdown
+        fi
     fi
 }
 
